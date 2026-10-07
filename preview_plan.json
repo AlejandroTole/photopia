@@ -1,0 +1,57 @@
+{
+  "photoia": {
+    "stage": "PREVIEW_ENGINE",
+    "version": "0.1.0"
+  },
+  "created_at": "2026-09-12T15:33:05.719528",
+  "input": {
+    "raw_file": "C:\\Users\\alejo\\Desktop\\PHOTOIA\\_DSC2125.NEF",
+    "original_raw_modified": false
+  },
+  "validation": {
+    "validation_status": "APPROVED",
+    "edit_status": "EDIT_REQUIRED",
+    "original_decision": "MINIMAL",
+    "confidence": 80.0,
+    "violations_detected": 0
+  },
+  "adjustments": {
+    "exposure": 0.0,
+    "contrast": 5.0,
+    "highlights": 0.0,
+    "shadows": 0.0,
+    "whites": 0.0,
+    "blacks": 0.0,
+    "temperature": 0.0,
+    "tint": 0.0,
+    "vibrance": 5.0,
+    "saturation": 0.0,
+    "clarity": 5.0,
+    "texture": 5.0,
+    "sharpening": 5.0,
+    "noise_reduction": 0.0,
+    "rotation": 0.0
+  },
+  "changed_parameters": [
+    "contrast",
+    "vibrance",
+    "clarity",
+    "texture",
+    "sharpening"
+  ],
+  "preview": {
+    "status": "PREVIEW_READY",
+    "darktable_called": false,
+    "xmp_created": false,
+    "raw_modified": false
+  },
+  "safety": {
+    "original_raw_modified": false,
+    "darktable_called": false,
+    "automatic_edit_applied": false
+  },
+  "next_stage": {
+    "component": "DARKTABLE_PREVIEW",
+    "ready": true
+  }
+}

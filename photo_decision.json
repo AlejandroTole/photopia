@@ -1,0 +1,45 @@
+{
+  "decision": "MINIMAL",
+  "confidence": 80,
+  "reason": "La fotografía está correctamente expuesta y equilibrada, con una distribución de luminosidad y color natural.",
+  "adjustments": {
+    "exposure": 0.0,
+    "contrast": 5,
+    "highlights": 0,
+    "shadows": 0,
+    "whites": 0,
+    "blacks": 0,
+    "temperature": 0,
+    "tint": 0,
+    "vibrance": 5,
+    "saturation": 0,
+    "clarity": 5,
+    "texture": 5,
+    "sharpening": 5,
+    "noise_reduction": 0,
+    "rotation": 0
+  },
+  "changed_parameters": [
+    "contrast",
+    "vibrance",
+    "clarity",
+    "texture",
+    "sharpening"
+  ],
+  "notes": "Se han realizado ajustes mínimos para mejorar ligeramente el contraste, vibrancia, claridad, textura y nitidez, manteniendo la exposición y el balance de blancos intactos.",
+  "audit": {
+    "model": "qwen2.5:7b",
+    "objective_analysis_used": true,
+    "visual_analysis_used": true,
+    "original_raw_modified": false,
+    "safety_limits_applied": true,
+    "raw_shadow_clipping_percent": 17.793946,
+    "raw_highlight_clipping_percent": 0.005592,
+    "rgb_shadow_clipping_percent": 0.0,
+    "rgb_highlight_clipping_percent": 0.264931,
+    "rgb_normal_regions": 15,
+    "rgb_total_regions": 16,
+    "green_distribution": "WIDESPREAD",
+    "possible_global_green_cast": false
+  }
+}

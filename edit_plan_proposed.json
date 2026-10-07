@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "target": {
+    "operation": "sigmoid",
+    "darktable_num": 32
+  },
+  "sigmoid": {
+    "contrast": 3.5,
+    "skew": -0.33000001311302185,
+    "target_white": 71.61000061035156,
+    "target_black": 0.2676999866962433,
+    "color_processing": "per channel",
+    "preserve_hue": 70.52999877929688,
+    "red_attenuation": 7.299999892711639,
+    "red_rotation": 11.799999588427756,
+    "green_attenuation": 32.69999921321869,
+    "green_rotation": 9.99999970909292,
+    "blue_attenuation": 10.199999809265137,
+    "blue_rotation": 19.500000542636936,
+    "recover_purity": 36.000001430511475,
+    "base_primaries": "working profile"
+  }
+}

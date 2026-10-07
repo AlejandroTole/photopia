@@ -1,0 +1,38 @@
+{
+  "validation_status": "APPROVED",
+  "edit_status": "EDIT_REQUIRED",
+  "original_decision": "MINIMAL",
+  "confidence": 80,
+  "adjustments": {
+    "exposure": 0.0,
+    "contrast": 5.0,
+    "highlights": 0.0,
+    "shadows": 0.0,
+    "whites": 0.0,
+    "blacks": 0.0,
+    "temperature": 0.0,
+    "tint": 0.0,
+    "vibrance": 5.0,
+    "saturation": 0.0,
+    "clarity": 5.0,
+    "texture": 5.0,
+    "sharpening": 5.0,
+    "noise_reduction": 0.0,
+    "rotation": 0.0
+  },
+  "changed_parameters": [
+    "contrast",
+    "vibrance",
+    "clarity",
+    "texture",
+    "sharpening"
+  ],
+  "violations": [],
+  "audit": {
+    "validator": "PHOTOIA_DECISION_VALIDATOR",
+    "objective_analysis_used": true,
+    "safety_limits_applied": true,
+    "original_raw_modified": false,
+    "darktable_called": false
+  }
+}

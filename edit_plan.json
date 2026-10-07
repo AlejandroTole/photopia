@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "target": {
+    "operation": "sigmoid",
+    "darktable_num": 32
+  },
+  "sigmoid": {
+    "contrast": 3.0,
+    "skew": -0.33,
+    "target_white": 71.61,
+    "target_black": 0.2677,
+    "color_processing": "per channel",
+    "preserve_hue": 70.53,
+    "red_attenuation": 7.3,
+    "red_rotation": 11.8,
+    "green_attenuation": 32.7,
+    "green_rotation": 10.0,
+    "blue_attenuation": 10.2,
+    "blue_rotation": 19.5,
+    "recover_purity": 36.0,
+    "base_primaries": "working profile"
+  }
+}

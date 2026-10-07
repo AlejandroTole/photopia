@@ -1,0 +1,38 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches and environments
+.env
+.venv/
+venv/
+ENV/
+env/
+
+# Large image and RAW files
+*.NEF
+*.nef
+*.CR2
+*.cr2
+*.ARW
+*.arw
+*.DNG
+*.dng
+*.JPG
+*.jpg
+*.jpeg
+*.png
+*.tiff
+*.tif
+
+# Output preview directories
+preview_*/
+
+# Backup and temp files
+*.backup.*
+*.bak
+*~
+*.swp
+.DS_Store
+Thumbs.db
