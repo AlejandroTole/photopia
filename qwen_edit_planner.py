@@ -7,6 +7,7 @@ import re
 
 import requests
 from PIL import Image
+from apply.writers.sigmoid import unpack_sigmoid_params
 
 
 # ============================================================
@@ -52,7 +53,6 @@ BASE_PRIMARIES = {
 def extract_latest_sigmoid():
 
     import re
-    import struct
 
     if not os.path.exists(XMP_FILE):
 
@@ -108,10 +108,7 @@ def extract_latest_sigmoid():
         if len(raw) != 56:
             continue
 
-        values = struct.unpack(
-            "<14f",
-            raw
-        )
+        values = unpack_sigmoid_params(raw)
 
         results.append(
             {

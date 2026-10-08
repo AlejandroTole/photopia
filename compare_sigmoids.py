@@ -1,6 +1,6 @@
 import re
-import struct
 import math
+from apply.writers.sigmoid import unpack_sigmoid_params
 
 
 XMP_FILE = "_DSC2125.NEF.xmp"
@@ -71,10 +71,7 @@ def extract_sigmoids(xmp):
             match.group("params")
         )
 
-        values = struct.unpack(
-            "<14f",
-            raw
-        )
+        values = unpack_sigmoid_params(raw)
 
         results.append({
             "num": num,

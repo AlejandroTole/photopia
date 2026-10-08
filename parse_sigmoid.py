@@ -1,6 +1,10 @@
 import re
-import struct
 import math
+from apply.writers.sigmoid import (
+    SLOT_BASE_PRIMARIES,
+    SLOT_COLOR_PROCESSING,
+    unpack_sigmoid_params,
+)
 
 XMP_FILE = "_DSC2125.NEF.xmp"
 
@@ -43,7 +47,7 @@ def decode_sigmoid_params(hex_data):
             f"Se esperaban 56 bytes, pero llegaron {len(raw)}."
         )
 
-    return struct.unpack("<14f", raw)
+    return unpack_sigmoid_params(raw)
 
 
 def extract_sigmoids(xmp):
@@ -141,7 +145,7 @@ def print_current(item):
     print(f"Target white:      {values[2]:.9f}")
     print(f"Target black:      {values[3]:.9f}")
 
-    color_index = int(round(values[4]))
+    color_index = values[SLOT_COLOR_PROCESSING]
     color_name = COLOR_PROCESSING.get(
         color_index,
         f"UNKNOWN ({values[4]:.9f})"
@@ -149,7 +153,7 @@ def print_current(item):
 
     print(
         f"Color processing:  {color_name}"
-        f"   [internal {values[4]:.9f}]"
+        f"   [internal {values[SLOT_COLOR_PROCESSING]:d}]"
     )
 
     print(f"Preserve hue:      {values[5]:.9f}")
@@ -218,7 +222,7 @@ def print_current(item):
         f"  [internal {values[12]:.9f}]"
     )
 
-    base_index = int(round(values[13]))
+    base_index = values[SLOT_BASE_PRIMARIES]
 
     base_name = BASE_PRIMARIES.get(
         base_index,
@@ -227,7 +231,7 @@ def print_current(item):
 
     print(
         f"Base primaries:    {base_name}"
-        f"   [internal {values[13]:.9f}]"
+        f"   [internal {values[SLOT_BASE_PRIMARIES]:d}]"
     )
 
 

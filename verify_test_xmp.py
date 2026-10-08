@@ -1,6 +1,10 @@
 import re
-import struct
 import math
+from apply.writers.sigmoid import (
+    SLOT_BASE_PRIMARIES,
+    SLOT_COLOR_PROCESSING,
+    unpack_sigmoid_params,
+)
 
 
 TEST_XMP = "_DSC2125.TEST.NEF.xmp"
@@ -111,20 +115,17 @@ def unpack_params(hex_data):
             f"Sigmoid inválido: {len(raw)} bytes."
         )
 
-    return struct.unpack(
-        "<14f",
-        raw,
-    )
+    return unpack_sigmoid_params(raw)
 
 
 def print_value(index, value):
 
-    if index == 4:
+    if index == SLOT_COLOR_PROCESSING:
 
         print(
             f"[{index:2}] "
             f"{PARAM_NAMES[index]:<24} "
-            f"{value:.12f}  "
+            f"{value:d}  "
             f"({COLOR_PROCESSING.get(
                 int(round(value)),
                 'UNKNOWN'
@@ -157,12 +158,12 @@ def print_value(index, value):
             f"({math.degrees(value):.6f}°)"
         )
 
-    elif index == 13:
+    elif index == SLOT_BASE_PRIMARIES:
 
         print(
             f"[{index:2}] "
             f"{PARAM_NAMES[index]:<24} "
-            f"{value:.12f}  "
+            f"{value:d}  "
             f"({BASE_PRIMARIES.get(
                 int(round(value)),
                 'UNKNOWN'
@@ -243,7 +244,7 @@ def main():
         -0.33,
         71.61,
         0.2677,
-        0.0,
+        0,
         70.53,
         0.104,
         math.radians(11.8),
@@ -252,7 +253,7 @@ def main():
         0.102,
         math.radians(19.5),
         0.36,
-        0.0,
+        0,
     ]
 
     all_ok = True

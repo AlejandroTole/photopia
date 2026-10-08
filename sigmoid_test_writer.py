@@ -1,7 +1,7 @@
 import os
 import re
-import struct
 import math
+from apply.writers.sigmoid import pack_sigmoid_params, unpack_sigmoid_params
 
 
 # ============================================================
@@ -63,18 +63,8 @@ def degrees_to_radians(value):
     return math.radians(float(value))
 
 
-def to_float32(value):
-    return struct.unpack(
-        "<f",
-        struct.pack(
-            "<f",
-            float(value)
-        )
-    )[0]
-
-
 # ============================================================
-# CONSTRUIR LOS 14 FLOAT32
+# CONSTRUIR LOS 14 PARAMETROS SIGMOID TIPADOS
 # ============================================================
 
 def build_params():
@@ -138,22 +128,16 @@ def build_params():
         TEST_VALUES["base_primaries"],
     ]
 
-    return [
-        to_float32(value)
-        for value in values
-    ]
+    return unpack_sigmoid_params(pack_sigmoid_params(values))
 
 
 # ============================================================
-# FLOAT32 -> HEX
+# PARAMETROS TIPADOS -> HEX
 # ============================================================
 
 def params_to_hex(values):
 
-    raw = struct.pack(
-        "<14f",
-        *values
-    )
+    raw = pack_sigmoid_params(values)
 
     if len(raw) != 56:
         raise ValueError(

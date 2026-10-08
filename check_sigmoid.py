@@ -1,5 +1,9 @@
 import re
-import struct
+from apply.writers.sigmoid import (
+    SLOT_BASE_PRIMARIES,
+    SLOT_COLOR_PROCESSING,
+    unpack_sigmoid_params,
+)
 
 filename = "_DSC2125.NEF.xmp"
 
@@ -21,8 +25,12 @@ for i, hexdata in enumerate(p):
 
     raw = bytes.fromhex(hexdata)
 
-    print("FLOATS:")
+    if len(raw) != 56:
+        print(f"ERROR: el módulo contiene {len(raw)} bytes, se esperaban 56.")
+        continue
 
-    for j in range(0, len(raw) - 3, 4):
-        value = struct.unpack("<f", raw[j:j + 4])[0]
-        print(f"  [{j // 4}] {value:.9f}")
+    values = unpack_sigmoid_params(raw)
+    print("PARAMETROS:")
+    for index, value in enumerate(values):
+        kind = "int32" if index in (SLOT_COLOR_PROCESSING, SLOT_BASE_PRIMARIES) else "float32"
+        print(f"  [{index}] {kind}: {value}")

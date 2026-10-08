@@ -1,11 +1,16 @@
 import math
-import struct
+from apply.writers.sigmoid import (
+    SLOT_BASE_PRIMARIES,
+    SLOT_COLOR_PROCESSING,
+    pack_sigmoid_params,
+    unpack_sigmoid_params,
+)
 
 
 # ============================================================
 # PHOTOIA - SIGMOID ROUND TRIP
 #
-# UI -> valor interno Darktable -> float32 XMP
+# UI -> parámetros tipados Darktable/XMP
 #     -> valor recuperado
 #
 # ESTE PROGRAMA NO MODIFICA NINGUN XMP.
@@ -51,20 +56,8 @@ def radians_to_degrees(value):
 
 
 # ============================================================
-# EMPAQUETAR COMO DARKTABLE/XMP FLOAT32
+# EMPAQUETAR COMO DARKTABLE/XMP
 # ============================================================
-
-def to_float32(value):
-    """
-    Simula exactamente la precisión float32
-    utilizada en los parámetros del XMP.
-    """
-
-    return struct.unpack(
-        "<f",
-        struct.pack("<f", float(value))
-    )[0]
-
 
 # ============================================================
 # CONSTRUIR LOS 14 PARAMETROS
@@ -160,15 +153,12 @@ def build_internal_values():
 
 
 # ============================================================
-# FLOAT32
+# REPRESENTACION DARKTABLE/XMP
 # ============================================================
 
-def convert_to_float32(values):
+def roundtrip_serialized_params(values):
 
-    return [
-        to_float32(value)
-        for value in values
-    ]
+    return list(unpack_sigmoid_params(pack_sigmoid_params(values)))
 
 
 # ============================================================
@@ -192,7 +182,7 @@ def internal_to_ui(values):
         values[3],
 
         # [4]
-        int(round(values[4])),
+        values[SLOT_COLOR_PROCESSING],
 
         # [5]
         #
@@ -222,7 +212,7 @@ def internal_to_ui(values):
         fraction_to_percent(values[12]),
 
         # [13]
-        int(round(values[13])),
+        values[SLOT_BASE_PRIMARIES],
     ]
 
     return ui
@@ -232,7 +222,7 @@ def internal_to_ui(values):
 # MOSTRAR
 # ============================================================
 
-def print_results(original, float32_values, recovered):
+def print_results(original, serialized_values, recovered):
 
     print()
     print("=" * 78)
@@ -244,20 +234,28 @@ def print_results(original, float32_values, recovered):
         f"{'IDX':>3}  "
         f"{'PARAMETRO':<24} "
         f"{'ORIGINAL':>16} "
-        f"{'FLOAT32':>16} "
+        f"{'SERIALIZADO':>16} "
         f"{'RECUPERADO':>16}"
     )
 
     print("-" * 78)
 
     for i in range(14):
+        if i in (SLOT_COLOR_PROCESSING, SLOT_BASE_PRIMARIES):
+            original_display = f"{int(original[i]):d}"
+            serialized_display = f"{int(serialized_values[i]):d}"
+            recovered_display = f"{int(recovered[i]):d}"
+        else:
+            original_display = f"{original[i]:.9f}"
+            serialized_display = f"{serialized_values[i]:.9f}"
+            recovered_display = f"{recovered[i]:.9f}"
 
         print(
             f"{i:>3}  "
             f"{PARAM_NAMES[i]:<24} "
-            f"{original[i]:>16.9f} "
-            f"{float32_values[i]:>16.9f} "
-            f"{recovered[i]:>16.9f}"
+            f"{original_display:>16} "
+            f"{serialized_display:>16} "
+            f"{recovered_display:>16}"
         )
 
     print()
@@ -299,7 +297,7 @@ def print_results(original, float32_values, recovered):
     for i in range(14):
 
         difference = (
-            float32_values[i]
+            serialized_values[i]
             - current_xmp[i]
         )
 
@@ -311,7 +309,7 @@ def print_results(original, float32_values, recovered):
             f"{i:>3}  "
             f"{PARAM_NAMES[i]:<24} "
             f"{current_xmp[i]:>18.12f} "
-            f"{float32_values[i]:>18.12f} "
+            f"{serialized_values[i]:>18.12f} "
             f"{difference:>16.12f}"
         )
 
@@ -356,17 +354,17 @@ def main():
 
     original = build_internal_values()
 
-    float32_values = convert_to_float32(
+    serialized_values = roundtrip_serialized_params(
         original
     )
 
     recovered = internal_to_ui(
-        float32_values
+        serialized_values
     )
 
     print_results(
         original,
-        float32_values,
+        serialized_values,
         recovered
     )
 

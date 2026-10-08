@@ -3,11 +3,12 @@ import struct
 import sys
 from pathlib import Path
 
+from apply.writers.sigmoid import SLOT_BASE_PRIMARIES, SLOT_COLOR_PROCESSING
 from apply.xmp import find_operation_modules, read_xmp, select_target_module
 
 SIGMOID_BYTES_LEN = 56
-COLOR_PROCESSING_VALUES = {0, 1}
-BASE_PRIMARIES_VALUES = {0, 1, 2, 3, 4}
+COLOR_PROCESSING_VALUES = range(2)
+BASE_PRIMARIES_VALUES = range(5)
 
 
 def verify_slots(xmp_path: Path, requested_num=None) -> int:
@@ -22,7 +23,7 @@ def verify_slots(xmp_path: Path, requested_num=None) -> int:
         )
 
     decoded = {}
-    for index in (4, 13):
+    for index in (SLOT_COLOR_PROCESSING, SLOT_BASE_PRIMARIES):
         slot = raw[index * 4:index * 4 + 4]
         decoded[index] = (
             slot.hex(),
@@ -30,8 +31,8 @@ def verify_slots(xmp_path: Path, requested_num=None) -> int:
             struct.unpack("<f", slot)[0],
         )
 
-    color_bytes, color_int, color_float = decoded[4]
-    primaries_bytes, primaries_int, primaries_float = decoded[13]
+    color_bytes, color_int, color_float = decoded[SLOT_COLOR_PROCESSING]
+    primaries_bytes, primaries_int, primaries_float = decoded[SLOT_BASE_PRIMARIES]
     print(f"XMP: {xmp_path}")
     print(f"Sigmoid darktable:num={target['num']}")
     print(f"slot 4 bytes={color_bytes}: int32={color_int}, float32={color_float:.9g}")

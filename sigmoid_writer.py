@@ -7,6 +7,7 @@ import re
 import shutil
 import struct
 import sys
+from apply.writers.sigmoid import SIGMOID_ENUM_RANGES, pack_sigmoid_params, unpack_sigmoid_params
 
 
 XMP_FILE = "_DSC2125.NEF.xmp"
@@ -258,8 +259,8 @@ def build_params(plan):
     ]
 
     return [
-        to_float32(value)
-        for value in values
+        int(value) if index in SIGMOID_ENUM_RANGES else to_float32(value)
+        for index, value in enumerate(values)
     ]
 
 
@@ -269,10 +270,7 @@ def build_params(plan):
 
 def params_to_hex(values):
 
-    raw = struct.pack(
-        "<14f",
-        *values
-    )
+    raw = pack_sigmoid_params(values)
 
     if len(raw) != 56:
 
@@ -425,10 +423,7 @@ def read_sigmoid(
             "El Sigmoid no contiene 56 bytes."
         )
 
-    values = struct.unpack(
-        "<14f",
-        raw
-    )
+    values = unpack_sigmoid_params(raw)
 
     return target, values
 

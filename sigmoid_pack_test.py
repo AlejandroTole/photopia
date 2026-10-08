@@ -1,5 +1,5 @@
 import re
-import struct
+from apply.writers.sigmoid import pack_sigmoid_params, unpack_sigmoid_params
 
 
 XMP_FILE = "_DSC2125.NEF.xmp"
@@ -54,7 +54,7 @@ def extract_sigmoids(xmp):
 
 
 # ============================================================
-# HEX -> 14 FLOAT32
+# HEX -> typed sigmoid parameters
 # ============================================================
 
 def unpack_params(hex_data):
@@ -67,16 +67,11 @@ def unpack_params(hex_data):
             f"pero llegaron {len(raw)}."
         )
 
-    return list(
-        struct.unpack(
-            "<14f",
-            raw
-        )
-    )
+    return list(unpack_sigmoid_params(raw))
 
 
 # ============================================================
-# 14 FLOAT32 -> HEX
+# Typed sigmoid parameters -> HEX
 # ============================================================
 
 def pack_params(values):
@@ -87,10 +82,7 @@ def pack_params(values):
             "14 parámetros."
         )
 
-    raw = struct.pack(
-        "<14f",
-        *values
-    )
+    raw = pack_sigmoid_params(values)
 
     return raw.hex()
 

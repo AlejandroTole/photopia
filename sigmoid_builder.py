@@ -1,11 +1,12 @@
 import math
 import struct
+from apply.writers.sigmoid import SIGMOID_ENUM_RANGES, pack_sigmoid_params
 
 
 # ============================================================
 # PHOTOIA - SIGMOID BUILDER
 #
-# Convierte valores de interfaz en los 14 float32
+# Convierte valores de interfaz en parámetros sigmoid tipados
 # que Darktable almacena en darktable:params.
 #
 # IMPORTANTE:
@@ -111,7 +112,7 @@ def build_sigmoid(
 ):
     """
     Recibe valores tal como los entiende el usuario
-    y devuelve 14 float32 internos.
+    y devuelve 14 parámetros internos, con enums enteros.
     """
 
     # --------------------------------------------------------
@@ -200,9 +201,7 @@ def build_sigmoid(
 
     else:
 
-        color_processing_value = int(
-            color_processing
-        )
+        color_processing_value = color_processing
 
         if color_processing_value not in (
             0,
@@ -233,9 +232,7 @@ def build_sigmoid(
 
     else:
 
-        base_primaries_value = int(
-            base_primaries
-        )
+        base_primaries_value = base_primaries
 
         if base_primaries_value not in (
             0,
@@ -294,7 +291,7 @@ def build_sigmoid(
         float(target_black),
 
         # [4]
-        float(color_processing_value),
+        color_processing_value,
 
         # [5]
         #
@@ -340,21 +337,21 @@ def build_sigmoid(
         ),
 
         # [13]
-        float(base_primaries_value),
+        base_primaries_value,
     ]
 
     # --------------------------------------------------------
-    # CONVERSION FINAL A FLOAT32
+    # CONVERSION FINAL A LOS TIPOS DE DARKTABLE
     # --------------------------------------------------------
 
     return [
-        to_float32(value)
-        for value in values
+        int(value) if index in SIGMOID_ENUM_RANGES else to_float32(value)
+        for index, value in enumerate(values)
     ]
 
 
 # ============================================================
-# FLOAT32 -> HEX
+# Typed sigmoid parameters -> HEX
 # ============================================================
 
 def values_to_hex(values):
@@ -366,10 +363,7 @@ def values_to_hex(values):
             "14 parámetros."
         )
 
-    raw = struct.pack(
-        "<14f",
-        *values
-    )
+    raw = pack_sigmoid_params(values)
 
     return raw.hex()
 

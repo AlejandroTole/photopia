@@ -1,6 +1,6 @@
 import json
-import struct
 from pathlib import Path
+from apply.writers.sigmoid import pack_sigmoid_params, unpack_sigmoid_params
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -79,17 +79,9 @@ def build_params(sigmoid_value):
     El primer float es el valor de contraste.
     """
 
-    packed = struct.pack(
-        "<f",
-        float(sigmoid_value)
-    )
-
-    contrast_hex = packed.hex()
-
-    params = (
-        contrast_hex
-        + BASE_PARAMS[8:]
-    )
+    values = list(unpack_sigmoid_params(bytes.fromhex(BASE_PARAMS)))
+    values[0] = float(sigmoid_value)
+    params = pack_sigmoid_params(values).hex()
 
     if len(params) != 112:
         raise RuntimeError(
