@@ -1,0 +1,20 @@
+# ============================================================
+# PHOTOIA - CONFIGURATION (v2 - Phase 1)
+# ============================================================
+
+models:
+  planner: "qwen2.5vl:7b"
+  ollama_url: "http://127.0.0.1:11434"
+
+paths:
+  darktable_cli: "C:\\Program Files\\darktable\\bin\\darktable-cli.exe"
+  work_dir: "./work"
+  output_dir: "./output"
+
+limits:
+  max_iterations: 3
+  exposure_ev: [-1.0, 1.0]
+  sigmoid_contrast: [0.8, 3.5]
+
+judge:
+  preview_scale: 0.25
