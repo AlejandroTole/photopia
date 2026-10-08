@@ -30,6 +30,8 @@ env/
 preview_*/
 work/
 output/
+fotos para editar/
+resultados/
 
 # Backup and temp files
 *.backup.*
