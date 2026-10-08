@@ -16,7 +16,7 @@ MODEL = "llava:13b"
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
-MAX_IMAGE_SIZE = 1600
+MAX_IMAGE_SIZE = 1024
 TIMEOUT = 900
 
 ANALYSIS_FILE = Path("llava_analysis.txt")
@@ -140,7 +140,7 @@ try:
     image.save(
         buffer,
         format="JPEG",
-        quality=90
+        quality=85
     )
 
 except Exception as e:

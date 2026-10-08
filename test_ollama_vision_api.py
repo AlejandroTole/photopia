@@ -1,6 +1,8 @@
 import base64
+import io
 import os
 import requests
+from PIL import Image
 
 
 MODEL = "qwen2.5vl:32b"
@@ -23,14 +25,18 @@ if not os.path.exists(IMAGE_FILE):
     raise SystemExit(1)
 
 
-with open(
-    IMAGE_FILE,
-    "rb"
-) as f:
+with Image.open(IMAGE_FILE) as img:
+    img = img.convert("RGB")
+    w, h = img.size
+    max_size = 1024
+    if max(w, h) > max_size:
+        scale = max_size / max(w, h)
+        new_size = (int(round(w * scale)), int(round(h * scale)))
+        img = img.resize(new_size, Image.Resampling.LANCZOS)
 
-    image_base64 = base64.b64encode(
-        f.read()
-    ).decode("utf-8")
+    buffer = io.BytesIO()
+    img.save(buffer, format="JPEG", quality=85)
+    image_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
 
 payload = {

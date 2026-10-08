@@ -28,6 +28,8 @@ env/
 
 # Output preview directories
 preview_*/
+work/
+output/
 
 # Backup and temp files
 *.backup.*

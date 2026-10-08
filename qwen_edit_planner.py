@@ -1,10 +1,12 @@
 import base64
+import io
 import json
 import math
 import os
 import re
 
 import requests
+from PIL import Image
 
 
 # ============================================================
@@ -188,16 +190,18 @@ def load_image_base64():
             f"No existe la imagen: {IMAGE_FILE}"
         )
 
-    with open(
-        IMAGE_FILE,
-        "rb"
-    ) as f:
+    with Image.open(IMAGE_FILE) as img:
+        img = img.convert("RGB")
+        w, h = img.size
+        max_size = 1024
+        if max(w, h) > max_size:
+            scale = max_size / max(w, h)
+            new_size = (int(round(w * scale)), int(round(h * scale)))
+            img = img.resize(new_size, Image.Resampling.LANCZOS)
 
-        data = f.read()
-
-    return base64.b64encode(
-        data
-    ).decode("utf-8")
+        buffer = io.BytesIO()
+        img.save(buffer, format="JPEG", quality=85)
+        return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
 
 # ============================================================

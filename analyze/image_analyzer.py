@@ -770,37 +770,32 @@ def summarize_spatial_color(regions):
 
 
 # ============================================================
-# MAIN
+# ANALYZE IMAGE
 # ============================================================
 
-def main():
-
-    image_path = Path(IMAGE_FILE)
+def analyze_image(
+    image_path,
+    output_path=None,
+    grid_rows=GRID_ROWS,
+    grid_cols=GRID_COLS,
+    verbose=True,
+):
+    image_path = Path(image_path)
 
     if not image_path.exists():
-
-        print(
-            f"ERROR: No se encontró "
-            f"{image_path.resolve()}"
+        raise FileNotFoundError(
+            f"No se encontró {image_path.resolve()}"
         )
 
-        return
-
-    print("=" * 60)
-    print("PHOTOIA - IMAGE ANALYZER")
-    print("=" * 60)
-
-    print(f"Fotografía: {IMAGE_FILE}")
-    print()
-
-    print("Leyendo RAW...")
+    if verbose:
+        print("=" * 60)
+        print("PHOTOIA - IMAGE ANALYZER")
+        print("=" * 60)
+        print(f"Fotografía: {image_path.name}")
+        print()
+        print("Leyendo RAW...")
 
     with rawpy.imread(str(image_path)) as raw:
-
-        # ----------------------------------------------------
-        # RAW SENSOR
-        # ----------------------------------------------------
-
         sensor_signal, raw_analysis = (
             analyze_raw_sensor(raw)
         )
@@ -939,20 +934,11 @@ def main():
     # GUARDAR JSON
     # --------------------------------------------------------
 
-    output_path = Path(OUTPUT_FILE)
-
-    with open(
-        output_path,
-        "w",
-        encoding="utf-8"
-    ) as f:
-
-        json.dump(
-            result,
-            f,
-            indent=2,
-            ensure_ascii=False
-        )
+    if output_path is not None:
+        out_p = Path(output_path)
+        out_p.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_p, "w", encoding="utf-8") as f:
+            json.dump(result, f, indent=2, ensure_ascii=False)
 
     # ========================================================
     # CONSOLA
@@ -1198,24 +1184,31 @@ def main():
         f"{color_spatial_summary['possible_global_blue_cast']}"
     )
 
-    # ========================================================
-    # GUARDADO
-    # ========================================================
+    if output_path is not None and verbose:
+        print()
+        print("=" * 60)
+        print("ANALISIS GUARDADO")
+        print("=" * 60)
+        print(f"Archivo: {Path(output_path).resolve()}")
 
-    print()
-    print("=" * 60)
-    print("ANALISIS GUARDADO")
-    print("=" * 60)
+    if verbose:
+        print()
+        print("=" * 60)
+        print("PHOTOIA - IMAGE ANALYZER TERMINADO")
+        print("=" * 60)
 
-    print(
-        f"Archivo: "
-        f"{output_path.resolve()}"
-    )
+    return result
 
-    print()
-    print("=" * 60)
-    print("PHOTOIA - IMAGE ANALYZER TERMINADO")
-    print("=" * 60)
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="PHOTOIA - RAW Image Analyzer")
+    parser.add_argument("image", nargs="?", default="_DSC2125.NEF", help="Path to RAW (.NEF)")
+    parser.add_argument("-o", "--output", default="image_analysis.json", help="Output JSON path")
+    parser.add_argument("--silent", action="store_true", help="Suppress console summary")
+    args = parser.parse_args()
+
+    analyze_image(args.image, output_path=args.output, verbose=not args.silent)
 
 
 if __name__ == "__main__":
