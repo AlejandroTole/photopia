@@ -8,7 +8,7 @@ Photopia analiza imágenes fotográficas en formato RAW utilizando modelos de vi
 
 ## Componentes principales
 
-- **Análisis de imagen**: Evaluación de histograma, balance, contraste y contenido visual mediante modelos de visión (`image_analyzer.py`, `test_ollama_vision_api.py`).
+- **Análisis de imagen**: Evaluación de histograma, balance, contraste y contenido visual mediante modelos de visión (`analyze/image_analyzer.py`, `test_ollama_vision_api.py`).
 - **Planificación de edición**: Generación y validación de planes de revelado fotográfico (`qwen_edit_planner.py`, `validate_edit_plan.py`, `decision_editor.py`).
 - **Mapeo tonal Sigmoid**: Lectura, cálculo, codificación y empaquetado de parámetros para el módulo Sigmoid de Darktable (`sigmoid_builder.py`, `sigmoid_writer.py`, `sigmoid_converter.py`, `parse_sigmoid.py`).
 - **Generación de XMP**: Creación y actualización de sidecars `.xmp` compatibles con Darktable (`darktable_xmp_generator.py`).
