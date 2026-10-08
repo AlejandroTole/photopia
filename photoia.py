@@ -2,16 +2,18 @@
 """PHOTOIA: procesamiento por lote de fotos RAW."""
 import argparse
 import json
+import math
 import shutil
 import sys
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
+import rawpy
 from analyze.image_analyzer import analyze_image
 from apply.writers.exposure import apply_exposure
 from apply.writers.sigmoid import apply_sigmoid
 from apply.writers.whitebalance import apply_temperature
-from apply.xmp import create_backup, restore_backup
+from apply.xmp import atomic_write, create_backup, read_xmp, restore_backup
 from config import load_config
 from plan.planner import plan_edit
 from plan.safety import sanitize_plan
@@ -21,6 +23,72 @@ from render.darktable_cli import DarktableCli
 RAW_EXTENSIONS = {".nef", ".arw", ".cr2", ".dng", ".raf"}
 INPUT_DIR = Path("fotos para editar")
 OUTPUT_DIR = Path("resultados")
+XMP_TEMPLATE = Path(__file__).resolve().parent / "templates" / "base.NEF.xmp"
+
+
+def bootstrap_xmp(
+    image_file: Path,
+    xmp_path: Path,
+    work_dir: Path,
+    limits: Dict[str, Any],
+) -> None:
+    if not XMP_TEMPLATE.is_file():
+        raise FileNotFoundError(f"No se encontró la plantilla XMP: {XMP_TEMPLATE}")
+
+    bootstrap_path = work_dir / "photoia_run" / f"{image_file.name}.bootstrap.xmp"
+    bootstrap_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(XMP_TEMPLATE, bootstrap_path)
+
+    try:
+        with rawpy.imread(str(image_file)) as raw:
+            camera_whitebalance = raw.camera_whitebalance
+            if camera_whitebalance is None or len(camera_whitebalance) < 3:
+                raise ValueError(
+                    "rawpy no proporcionó coeficientes de balance de blancos "
+                    "as-shot completos."
+                )
+            red, green, blue = (
+                float(camera_whitebalance[0]),
+                float(camera_whitebalance[1]),
+                float(camera_whitebalance[2]),
+            )
+
+        if not all(math.isfinite(value) and value > 0 for value in (red, green, blue)):
+            raise ValueError(
+                "rawpy devolvió coeficientes de balance de blancos no válidos."
+            )
+
+        wb_updates = {
+            "red": red / green,
+            "blue": blue / green,
+        }
+        success, message, _ = apply_temperature(
+            bootstrap_path,
+            wb_updates,
+            simulate=False,
+            limits=limits,
+        )
+        if not success:
+            raise RuntimeError(f"No se pudo escribir el balance de blancos: {message}")
+
+        success, message, _ = apply_exposure(
+            bootstrap_path,
+            {"exposure": 0.0},
+            simulate=False,
+            limits=limits,
+        )
+        if not success:
+            raise RuntimeError(f"No se pudo fijar exposure a 0.0 EV: {message}")
+
+        atomic_write(xmp_path, read_xmp(bootstrap_path))
+        print(
+            "  XMP inicializado desde la plantilla: "
+            f"WB rojo {wb_updates['red']:.4f}, azul {wb_updates['blue']:.4f}; "
+            "exposure 0.0 EV."
+        )
+    except Exception as error:
+        bootstrap_path.unlink(missing_ok=True)
+        raise RuntimeError(f"No se pudo generar el XMP inicial: {error}") from error
 
 
 def process_photo(
@@ -34,12 +102,20 @@ def process_photo(
         return False, f"Formato RAW no compatible: {image_file.name}"
 
     source_xmp = image_file.with_name(f"{image_file.name}.xmp")
-    if not source_xmp.is_file():
-        return False, f"No se encontró el sidecar XMP: {source_xmp}"
-
     work_dir = Path(config.get("paths", {}).get("work_dir", "./work")).resolve()
     work_dir.mkdir(parents=True, exist_ok=True)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    if not source_xmp.is_file():
+        try:
+            bootstrap_xmp(
+                image_file,
+                source_xmp,
+                work_dir,
+                config.get("limits", {}),
+            )
+        except Exception as error:
+            return False, str(error)
 
     stage_dir = work_dir / "photoia_run"
     stage_dir.mkdir(parents=True, exist_ok=True)
