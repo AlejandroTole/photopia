@@ -6,6 +6,7 @@ from pathlib import Path
 import os
 import shutil
 import subprocess
+import tempfile
 from typing import Optional
 
 
@@ -90,43 +91,51 @@ class DarktableCli:
         if not input_path.exists():
             raise FileNotFoundError(f"Archivo de entrada no encontrado: {input_path}")
 
-        cmd = [self.cli_path.resolve().as_posix(), input_path.as_posix()]
+        with tempfile.TemporaryDirectory(
+            prefix=".photoia-render-",
+            dir=output_path.parent,
+        ) as temp_dir:
+            rendered_path = Path(temp_dir) / output_path.name
+            cmd = [self.cli_path.resolve().as_posix(), input_path.as_posix()]
 
-        if xmp_path is not None:
-            resolved_xmp = Path(xmp_path).resolve()
-            if not resolved_xmp.exists():
-                raise FileNotFoundError(f"Sidecar XMP no encontrado: {resolved_xmp}")
-            cmd.append(resolved_xmp.as_posix())
+            if xmp_path is not None:
+                resolved_xmp = Path(xmp_path).resolve()
+                if not resolved_xmp.exists():
+                    raise FileNotFoundError(f"Sidecar XMP no encontrado: {resolved_xmp}")
+                cmd.append(resolved_xmp.as_posix())
 
-        cmd.append(output_path.as_posix())
+            cmd.append(rendered_path.as_posix())
 
-        if width is not None and width > 0:
-            cmd.extend(["--width", str(width)])
-        if height > 0:
-            cmd.extend(["--height", str(height)])
+            if width is not None and width > 0:
+                cmd.extend(["--width", str(width)])
+            if height > 0:
+                cmd.extend(["--height", str(height)])
 
-        cmd.extend(["--hq", "true" if hq else "false"])
-        cmd.extend(["--apply-custom-presets", "false"])
-        cmd.extend(["--core", "--conf", f"plugins/imageio/format/jpeg/quality={quality}"])
+            cmd.extend(["--hq", "true" if hq else "false"])
+            cmd.extend(["--apply-custom-presets", "false"])
+            cmd.extend(["--core", "--conf", f"plugins/imageio/format/jpeg/quality={quality}"])
 
-        result = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            timeout=timeout,
-        )
-
-        if result.returncode != 0:
-            raise RuntimeError(
-                f"darktable-cli falló con código {result.returncode}.\n"
-                f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+            result = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=timeout,
             )
 
-        if not output_path.exists() or output_path.stat().st_size == 0:
-            raise RuntimeError(
-                f"darktable-cli finalizó pero el archivo de salida no fue creado: {output_path}"
-            )
+            if result.returncode != 0:
+                raise RuntimeError(
+                    f"darktable-cli falló con código {result.returncode}.\n"
+                    f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+                )
+
+            if not rendered_path.exists() or rendered_path.stat().st_size == 0:
+                raise RuntimeError(
+                    "darktable-cli finalizó pero el archivo de salida no fue creado: "
+                    f"{rendered_path}"
+                )
+
+            os.replace(rendered_path, output_path)
 
         return output_path
 

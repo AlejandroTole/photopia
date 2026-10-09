@@ -17,5 +17,14 @@ Photopia analiza imágenes fotográficas en formato RAW utilizando modelos de vi
 ## Requisitos
 
 - Python 3.10+
-- [Darktable](https://www.darktable.org/) (opcional, para renderizado y procesamiento de XMP)
+- [Darktable](https://www.darktable.org/) (requerido para ejecutar el modo batch y renderizar RAW)
 - [Ollama](https://ollama.ai/) con modelos de visión compatibles (ej. Qwen2-VL, LLaVA)
+
+## Modo batch
+
+Coloca fotos RAW en `fotos para editar/` y ejecuta `python photoia.py`. Cada foto usa
+exclusivamente su propio sidecar (`<foto>.NEF.xmp`, o la extensión RAW correspondiente);
+los sidecars sin una foto asociada se anuncian en consola y se ignoran. Si falta el
+sidecar, PHOTOIA crea uno desde `templates/base.NEF.xmp`, inicializa el balance de
+blancos con los valores as-shot de la cámara y fija la exposición inicial en 0 EV.
+Los JPEG se guardan en `resultados/` como `<foto>_editado.jpg`.

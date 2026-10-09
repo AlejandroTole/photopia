@@ -255,11 +255,30 @@ def run_pipeline(image_path: Path | None = None) -> int:
             photos = [Path(image_path)]
         else:
             INPUT_DIR.mkdir(parents=True, exist_ok=True)
-            photos = sorted(
+            input_files = [path for path in INPUT_DIR.iterdir() if path.is_file()]
+            orphan_sidecars = sorted(
                 (
                     path
-                    for path in INPUT_DIR.iterdir()
-                    if path.is_file() and path.suffix.lower() in RAW_EXTENSIONS
+                    for path in input_files
+                    if path.suffix.lower() == ".xmp"
+                    and (
+                        path.with_suffix("").suffix.lower() not in RAW_EXTENSIONS
+                        or not path.with_suffix("").is_file()
+                    )
+                ),
+                key=lambda path: path.name.casefold(),
+            )
+            for sidecar in orphan_sidecars:
+                print(
+                    f"AVISO: XMP huérfano '{sidecar}' sin su foto RAW correspondiente; "
+                    "se ignora.",
+                    file=sys.stderr,
+                )
+
+            photos = sorted(
+                (
+                    path for path in input_files
+                    if path.suffix.lower() in RAW_EXTENSIONS
                 ),
                 key=lambda path: path.name.casefold(),
             )
