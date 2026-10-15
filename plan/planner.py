@@ -57,29 +57,30 @@ Analiza la imagen adjunta (render neutro baseline) junto con las siguientes mét
 MÉTRICAS:
 {json.dumps(metrics_summary, indent=2)}
 
-REGLAS DE REVELADO (Look profesional, natural y equilibrado):
+REGLAS DE REVELADO (Look profesional, natural, con punch de JPEG de cámara):
 1. Exposición (exposure EV):
-   - Solo ajusta si es necesario (+0.1 a +0.7 si está subexpuesta, o 0.0 si es adecuada).
-   - Evita quemar altas luces si rgb_highlight_clip_pct ya es relevante.
+   - El baseline scene-referred suele verse más oscuro que el JPEG de la Nikon; +0.2 a +0.5 es normal.
+   - Evita quemar altas luces si rgb_highlight_clip_pct ya es relevante (entonces techo +0.2).
 2. Curva tonal Sigmoid:
-   - contrast: típicamente entre 1.2 y 2.2 (default 1.5). Si la escena es muy plana, sube a 1.6-1.8.
-   - skew: entre -0.3 y 0.3. Negativo protege altas luces, positivo aclara sombras.
+   - contrast: default 2.0. Rango 1.8-2.2. Techo del look 2.2 (el sanitize permite más, no lo uses).
+   - Calima, cielo plano o escena lavada: 2.2. Solo baja a 1.8 si ya hay contraste fuerte.
+   - skew: 0.0 por defecto. Rango -0.2 a 0.2. No uses skew <= -0.1 salvo clipping de altas luces.
 3. Balance de Blancos (whitebalance warmth_shift):
    - Ajuste sutil: entre -0.05 y +0.05 (positivo = más cálido, negativo = más frío).
    - Si la escena contiene vegetación (green_distribution WIDESPREAD), NO corrijas a magenta.
 4. Conservadurismo:
-   - Cambios pequeños y justificados. Nunca exagerar.
+   - Natural, no HDR ni saturación falsa. Sí iguala el punch (contraste, color, detalle) del JPEG de cámara.
 
 Responde ÚNICAMENTE un objeto JSON válido con la siguiente estructura exacta:
 ```json
 {{
   "exposure": {{
-    "ev": 0.3,
+    "ev": 0.35,
     "black": 0.0
   }},
   "sigmoid": {{
-    "contrast": 1.6,
-    "skew": -0.1
+    "contrast": 2.0,
+    "skew": 0.0
   }},
   "whitebalance": {{
     "warmth_shift": 0.0
@@ -130,8 +131,8 @@ def plan_edit(
         # Fallback to sensible neutral plan if model is unavailable
         raw_text = ""
         fallback_plan = {
-            "exposure": {"ev": 0.3, "black": 0.0},
-            "sigmoid": {"contrast": 1.5, "skew": 0.0},
+            "exposure": {"ev": 0.35, "black": 0.0},
+            "sigmoid": {"contrast": 2.0, "skew": 0.0},
             "whitebalance": {"warmth_shift": 0.0},
             "reasoning": f"Fallback automático debido a error con Ollama: {e}",
         }
@@ -154,8 +155,8 @@ def plan_edit(
 
     if not parsed:
         parsed = {
-            "exposure": {"ev": 0.2, "black": 0.0},
-            "sigmoid": {"contrast": 1.5, "skew": 0.0},
+            "exposure": {"ev": 0.35, "black": 0.0},
+            "sigmoid": {"contrast": 2.0, "skew": 0.0},
             "whitebalance": {"warmth_shift": 0.0},
             "reasoning": "Plan neutro por defecto (respuesta de modelo no contenía JSON estructurado).",
         }

@@ -6,6 +6,10 @@ Enforces conservative adjustments, protects highlights/shadows, and prevents fal
 from typing import Dict, Any, List, Tuple
 
 
+# Look ceiling for sigmoid contrast. Stays inside config limits [0.8, 3.5].
+LOOK_CONTRAST_CEILING = 2.2
+
+
 def clamp(val: float, min_val: float, max_val: float) -> float:
     return max(min_val, min(max_val, float(val)))
 
@@ -59,9 +63,11 @@ def sanitize_plan(
     # 2. Sigmoid Safety
     sig_contrast_limits = limits.get("sigmoid_contrast", (0.8, 3.5))
     sig_skew_limits = limits.get("sigmoid_skew", (-0.6, 0.6))
+    contrast_min = sig_contrast_limits[0]
+    contrast_max = min(sig_contrast_limits[1], LOOK_CONTRAST_CEILING)
 
-    prop_contrast = proposed.get("sigmoid", {}).get("contrast", 1.5)
-    clamped_contrast = clamp(prop_contrast, sig_contrast_limits[0], sig_contrast_limits[1])
+    prop_contrast = proposed.get("sigmoid", {}).get("contrast", 2.0)
+    clamped_contrast = clamp(prop_contrast, contrast_min, contrast_max)
     if clamped_contrast != prop_contrast:
         notes.append(f"Contraste Sigmoid ajustado a límites seguros: {prop_contrast} -> {clamped_contrast}")
 

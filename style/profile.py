@@ -9,7 +9,7 @@ from typing import Dict, Any
 
 DEFAULT_STYLE = {
     "look": "natural_balanced",
-    "contrast_preference": 1.5,
+    "contrast_preference": 2.0,
     "warmth_preference": 0.0,
     "history": [],
 }
