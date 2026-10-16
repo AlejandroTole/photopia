@@ -215,7 +215,7 @@ def process_photo(
             input_image=image_file,
             output_image=output_path,
             xmp_path=staged_xmp,
-            width=2048,
+            width=None,
             hq=True,
             quality=92,
         )
