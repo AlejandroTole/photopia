@@ -217,7 +217,7 @@ def process_photo(
             xmp_path=staged_xmp,
             width=None,
             hq=True,
-            quality=92,
+            quality=97,
         )
 
         print("  Ajustes aplicados:")
