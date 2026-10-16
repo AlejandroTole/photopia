@@ -15,8 +15,8 @@ from plan.safety import LOOK_CONTRAST_CEILING, sanitize_plan
 TEMPLATE = Path(__file__).resolve().parent / "templates" / "base.NEF.xmp"
 # Packed from darktable 5.6.1 src/iop/sharpen.c:
 # DT_MODULE_INTROSPECTION(1, dt_iop_sharpen_params_t)
-# Tuned template: radius=2.0 (default), amount=0.3, threshold=0.2
-SHARPEN_DEFAULT_HEX = struct.pack("<fff", 2.0, 0.3, 0.2).hex()
+# Tuned template: radius=2.0 (default), amount=0.4, threshold=0.2
+SHARPEN_DEFAULT_HEX = struct.pack("<fff", 2.0, 0.4, 0.2).hex()
 
 
 class SharpenTemplateTests(unittest.TestCase):
