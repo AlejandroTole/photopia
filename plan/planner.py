@@ -59,10 +59,10 @@ MÉTRICAS:
 
 REGLAS DE REVELADO (Look profesional, natural, con punch de JPEG de cámara):
 1. Exposición (exposure EV):
-   - El baseline scene-referred suele verse más oscuro que el JPEG de la Nikon; +0.2 a +0.5 es normal.
+   - El baseline scene-referred suele verse más oscuro que el JPEG de la Nikon; +0.5 a +0.8 es normal.
    - Evita quemar altas luces si rgb_highlight_clip_pct ya es relevante (entonces techo +0.2).
 2. Curva tonal Sigmoid:
-   - contrast: default 2.0. Rango 1.8-2.2. Techo del look 2.2 (el sanitize permite más, no lo uses).
+   - contrast: default 2.2. Rango 1.8-2.2. Techo del look 2.2 (el sanitize permite más, no lo uses).
    - Calima, cielo plano o escena lavada: 2.2. Solo baja a 1.8 si ya hay contraste fuerte.
    - skew: 0.0 por defecto. Rango -0.2 a 0.2. No uses skew <= -0.1 salvo clipping de altas luces.
 3. Balance de Blancos (whitebalance warmth_shift):
@@ -75,11 +75,11 @@ Responde ÚNICAMENTE un objeto JSON válido con la siguiente estructura exacta:
 ```json
 {{
   "exposure": {{
-    "ev": 0.35,
+    "ev": 0.6,
     "black": 0.0
   }},
   "sigmoid": {{
-    "contrast": 2.0,
+    "contrast": 2.2,
     "skew": 0.0
   }},
   "whitebalance": {{
@@ -131,8 +131,8 @@ def plan_edit(
         # Fallback to sensible neutral plan if model is unavailable
         raw_text = ""
         fallback_plan = {
-            "exposure": {"ev": 0.35, "black": 0.0},
-            "sigmoid": {"contrast": 2.0, "skew": 0.0},
+            "exposure": {"ev": 0.6, "black": 0.0},
+            "sigmoid": {"contrast": 2.2, "skew": 0.0},
             "whitebalance": {"warmth_shift": 0.0},
             "reasoning": f"Fallback automático debido a error con Ollama: {e}",
         }
@@ -155,8 +155,8 @@ def plan_edit(
 
     if not parsed:
         parsed = {
-            "exposure": {"ev": 0.35, "black": 0.0},
-            "sigmoid": {"contrast": 2.0, "skew": 0.0},
+            "exposure": {"ev": 0.6, "black": 0.0},
+            "sigmoid": {"contrast": 2.2, "skew": 0.0},
             "whitebalance": {"warmth_shift": 0.0},
             "reasoning": "Plan neutro por defecto (respuesta de modelo no contenía JSON estructurado).",
         }
