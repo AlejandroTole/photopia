@@ -68,7 +68,17 @@ REGLAS DE REVELADO (Look profesional, natural, con punch de JPEG de cámara):
 3. Balance de Blancos (whitebalance warmth_shift):
    - Ajuste sutil: entre -0.05 y +0.05 (positivo = más cálido, negativo = más frío).
    - Si la escena contiene vegetación (green_distribution WIDESPREAD), NO corrijas a magenta.
-4. Conservadurismo:
+4. Viveza/Saturación (saturation, módulo colorbalancergb): objetivo "viveza nivel
+   Lightroom Auto" — colores más vivos con punch, manteniendo naturalidad, sin
+   saturación falsa.
+   - vibrance (viveza inteligente, protege pieles/tonos ya saturados): default 0.15,
+     rango útil 0.0-0.35. Sube hacia 0.25-0.35 en escenas apagadas, con neblina o
+     colores lavados; baja hacia 0.0-0.1 si la escena ya tiene colores intensos.
+   - saturation_global (saturación plana, más agresiva): default 0.0, úsala solo
+     si vibrance no alcanza el punch deseado, rango 0.0-0.15, conservador.
+   - Si hay posible dominante de color global (possible_green_cast u otros), NO
+     subas viveza/saturación: la amplificarías como si fuera un color real.
+5. Conservadurismo:
    - Natural, no HDR ni saturación falsa. Sí iguala el punch (contraste, color, detalle) del JPEG de cámara.
 
 Responde ÚNICAMENTE un objeto JSON válido con la siguiente estructura exacta:
@@ -84,6 +94,10 @@ Responde ÚNICAMENTE un objeto JSON válido con la siguiente estructura exacta:
   }},
   "whitebalance": {{
     "warmth_shift": 0.0
+  }},
+  "saturation": {{
+    "vibrance": 0.15,
+    "saturation_global": 0.0
   }},
   "reasoning": "Breve explicación técnica de 1-2 frases"
 }}
@@ -134,6 +148,7 @@ def plan_edit(
             "exposure": {"ev": 0.6, "black": 0.0},
             "sigmoid": {"contrast": 2.2, "skew": 0.0},
             "whitebalance": {"warmth_shift": 0.0},
+            "saturation": {"vibrance": 0.15, "saturation_global": 0.0},
             "reasoning": f"Fallback automático debido a error con Ollama: {e}",
         }
         sanitized, notes = sanitize_plan(fallback_plan, analysis, limits)
@@ -158,6 +173,7 @@ def plan_edit(
             "exposure": {"ev": 0.6, "black": 0.0},
             "sigmoid": {"contrast": 2.2, "skew": 0.0},
             "whitebalance": {"warmth_shift": 0.0},
+            "saturation": {"vibrance": 0.15, "saturation_global": 0.0},
             "reasoning": "Plan neutro por defecto (respuesta de modelo no contenía JSON estructurado).",
         }
 

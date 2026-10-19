@@ -9,6 +9,11 @@ from typing import Dict, Any, List, Tuple
 # Look ceiling for sigmoid contrast. Stays inside config limits [0.8, 3.5].
 LOOK_CONTRAST_CEILING = 2.2
 
+# Look ceilings for vibrance/saturation ("Auto" de Lightroom: punch sin
+# saturación falsa). Más conservadores que los límites globales de config.
+VIBRANCE_LOOK_CEILING = 0.35
+SATURATION_GLOBAL_LOOK_CEILING = 0.18
+
 
 def clamp(val: float, min_val: float, max_val: float) -> float:
     return max(min_val, min(max_val, float(val)))
@@ -98,6 +103,46 @@ def sanitize_plan(
 
     sanitized["whitebalance"] = {
         "warmth_shift": round(clamped_warmth, 3),
+    }
+
+    # 4. Vibrance/Saturation Safety (colorbalancergb) - "viveza nivel Lightroom
+    # Auto": más punch de color sin look artificial ni amplificar dominantes.
+    vibrance_limits = limits.get("saturation_vibrance", (-0.3, 0.5))
+    sat_global_limits = limits.get("saturation_global", (-0.2, 0.3))
+    vibrance_ceiling = min(vibrance_limits[1], VIBRANCE_LOOK_CEILING)
+    sat_global_ceiling = min(sat_global_limits[1], SATURATION_GLOBAL_LOOK_CEILING)
+
+    prop_vibrance = proposed.get("saturation", {}).get("vibrance", 0.0)
+    clamped_vibrance = clamp(prop_vibrance, vibrance_limits[0], vibrance_ceiling)
+
+    prop_sat_global = proposed.get("saturation", {}).get("saturation_global", 0.0)
+    clamped_sat_global = clamp(prop_sat_global, sat_global_limits[0], sat_global_ceiling)
+
+    # Rule: never amplify a detected global color cast with a false punch boost
+    cast_detected = (
+        color_spatial.get("possible_global_green_cast", False)
+        or color_spatial.get("possible_global_red_cast", False)
+        or color_spatial.get("possible_global_blue_cast", False)
+    )
+    if cast_detected and (clamped_vibrance > 0.1 or clamped_sat_global > 0.05):
+        clamped_vibrance = min(clamped_vibrance, 0.1)
+        clamped_sat_global = min(clamped_sat_global, 0.05)
+        notes.append(
+            "Dominante de color global detectada: viveza/saturación limitadas "
+            "para no amplificar un falso color."
+        )
+
+    # Rule: do not push extra saturation into already-blown highlights
+    if rgb_hl_clip > 1.0 and clamped_vibrance > 0.15:
+        clamped_vibrance = 0.15
+        notes.append(
+            "Viveza limitada a 0.15 por riesgo de saturar canales en altas "
+            "luces ya recortadas."
+        )
+
+    sanitized["saturation"] = {
+        "vibrance": round(clamped_vibrance, 3),
+        "saturation_global": round(clamped_sat_global, 3),
     }
 
     return sanitized, notes

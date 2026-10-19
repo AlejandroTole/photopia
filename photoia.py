@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Tuple
 import rawpy
 from analyze.image_analyzer import analyze_image
 from apply.writers.exposure import apply_exposure
+from apply.writers.saturation import apply_vibrance
 from apply.writers.sigmoid import apply_sigmoid
 from apply.writers.whitebalance import apply_temperature
 from apply.xmp import atomic_write, create_backup, read_xmp, restore_backup
@@ -98,15 +99,17 @@ def apply_writer_plan(
     limits: Dict[str, Any],
 ) -> Dict[str, Dict[str, Any]]:
     """
-    Aplica exposure, whitebalance y sigmoid sobre el XMP de trabajo con
-    backup+rollback atómico. Lanza RuntimeError con rollback aplicado si
-    cualquier módulo falla. Devuelve los valores efectivamente escritos.
+    Aplica exposure, whitebalance, sigmoid y saturación/viveza sobre el XMP de
+    trabajo con backup+rollback atómico. Lanza RuntimeError con rollback
+    aplicado si cualquier módulo falla. Devuelve los valores efectivamente
+    escritos.
     """
     backup = create_backup(staged_xmp)
     writers = (
         ("exposure", apply_exposure, plan.get("exposure", {})),
         ("whitebalance", apply_temperature, plan.get("whitebalance", {})),
         ("sigmoid", apply_sigmoid, plan.get("sigmoid", {})),
+        ("saturation", apply_vibrance, plan.get("saturation", {})),
     )
     applied: Dict[str, Dict[str, Any]] = {}
 
@@ -224,7 +227,7 @@ def process_photo(
 
         limits = config.get("limits", {})
 
-        print("  [4/5] Aplicando exposure, balance de blancos y sigmoid...")
+        print("  [4/5] Aplicando exposure, balance de blancos, sigmoid y viveza/saturación...")
         applied = apply_writer_plan(staged_xmp, plan, limits)
 
         print(f"  [5/5] Renderizando {output_path}...")
@@ -250,6 +253,11 @@ def process_photo(
             f"skew {applied['sigmoid']['skew']:+.3f}, "
             f"color_processing {applied['sigmoid']['color_processing']}, "
             f"base_primaries {applied['sigmoid']['base_primaries']}"
+        )
+        print(
+            "    Viveza/Saturación: "
+            f"vibrance {applied['saturation']['vibrance']:+.3f}, "
+            f"saturación global {applied['saturation']['saturation_global']:+.3f}"
         )
         if safety_notes:
             print("  Notas de seguridad:")
@@ -297,6 +305,10 @@ def process_photo(
                 "whitebalance": {
                     "warmth_shift": adjustments.get("warmth_shift", 0.0),
                 },
+                "saturation": {
+                    "vibrance": applied["saturation"]["vibrance"] + adjustments.get("vibrance", 0.0),
+                    "saturation_global": applied["saturation"]["saturation_global"],
+                },
             }
             retry_plan, retry_notes = sanitize_plan(retry_plan_raw, analysis, limits)
             safety_notes.extend(note for note in retry_notes if note not in safety_notes)
@@ -306,7 +318,8 @@ def process_photo(
                 f"EV {adjustments.get('exposure_ev', 0.0):+.3f}, "
                 f"contraste {adjustments.get('sigmoid_contrast', 0.0):+.3f}, "
                 f"skew {adjustments.get('sigmoid_skew', 0.0):+.3f}, "
-                f"warmth {adjustments.get('warmth_shift', 0.0):+.3f}"
+                f"warmth {adjustments.get('warmth_shift', 0.0):+.3f}, "
+                f"vibrance {adjustments.get('vibrance', 0.0):+.3f}"
             )
             applied = apply_writer_plan(staged_xmp, retry_plan, limits)
             darktable.render(

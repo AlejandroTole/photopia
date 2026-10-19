@@ -36,6 +36,8 @@ DEFAULT_CONFIG = {
         "sigmoid_skew": [-0.6, 0.6],
         "sigmoid_preserve_hue": [0.0, 100.0],
         "temperature_delta_ratio": [-0.15, 0.15],
+        "saturation_vibrance": [-0.3, 0.5],
+        "saturation_global": [-0.2, 0.3],
     },
     "render": {
         "preview_width": 1920,

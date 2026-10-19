@@ -25,6 +25,7 @@ ADJUSTMENT_BOUNDS = {
     "sigmoid_contrast": 0.5,
     "sigmoid_skew": 0.3,
     "warmth_shift": 0.1,
+    "vibrance": 0.2,
 }
 
 NEUTRAL_ADJUSTMENTS: Dict[str, float] = {key: 0.0 for key in ADJUSTMENT_BOUNDS}
@@ -53,7 +54,10 @@ CRITERIOS DE EVALUACIÓN:
    y vegetación creíbles.
 3. Punch (contraste, color y detalle) al nivel del JPEG de cámara, cuando hay
    referencia disponible.
-4. Altas luces sin quemar (sin clipping relevante).
+4. Viveza de color ("Auto" de Lightroom): colores vivos con punch pero creíbles;
+   señala tanto imágenes apagadas/grises que necesitan más viveza como colores
+   ya sobre-saturados o con aspecto artificial.
+5. Altas luces sin quemar (sin clipping relevante).
 
 Responde ÚNICAMENTE un objeto JSON válido con esta estructura exacta:
 ```json
@@ -65,18 +69,21 @@ Responde ÚNICAMENTE un objeto JSON válido con esta estructura exacta:
     "exposure_ev": 0.0,
     "sigmoid_contrast": 0.0,
     "sigmoid_skew": 0.0,
-    "warmth_shift": 0.0
+    "warmth_shift": 0.0,
+    "vibrance": 0.0
   }},
   "reasoning": "Breve explicación de 1-2 frases"
 }}
 ```
 Reglas para "adjustments": son DELTAS conservadores (no valores absolutos) que
-se sumarán al plan ya aplicado, usando únicamente los 3 writers existentes
-(exposure, sigmoid, whitebalance). Si accept es true, deja todos los
-adjustments en 0.0. Si accept es false, propone el delta mínimo necesario para
-corregir los issues detectados, dentro de estos rangos: exposure_ev entre -0.5
-y 0.5, sigmoid_contrast entre -0.5 y 0.5, sigmoid_skew entre -0.3 y 0.3,
-warmth_shift entre -0.1 y 0.1."""
+se sumarán al plan ya aplicado, usando únicamente los 4 writers existentes
+(exposure, sigmoid, whitebalance, saturación/viveza vía colorbalancergb). Si
+accept es true, deja todos los adjustments en 0.0. Si accept es false, propone
+el delta mínimo necesario para corregir los issues detectados, dentro de estos
+rangos: exposure_ev entre -0.5 y 0.5, sigmoid_contrast entre -0.5 y 0.5,
+sigmoid_skew entre -0.3 y 0.3, warmth_shift entre -0.1 y 0.1, vibrance entre
+-0.2 y 0.2 (positivo = más viveza/punch, negativo = reduce saturación si ya es
+falsa o excesiva)."""
 
 
 def _clamp_score(value: Any) -> int:

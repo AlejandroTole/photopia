@@ -45,7 +45,8 @@ class JudgeRenderTests(unittest.TestCase):
             '    "exposure_ev": 0.0,\n'
             '    "sigmoid_contrast": 0.0,\n'
             '    "sigmoid_skew": 0.0,\n'
-            '    "warmth_shift": 0.0\n'
+            '    "warmth_shift": 0.0,\n'
+            '    "vibrance": 0.0\n'
             "  },\n"
             '  "reasoning": "Render natural, bien balanceado, sin artefactos."\n'
             "}\n"
@@ -65,6 +66,7 @@ class JudgeRenderTests(unittest.TestCase):
                 "sigmoid_contrast": 0.0,
                 "sigmoid_skew": 0.0,
                 "warmth_shift": 0.0,
+                "vibrance": 0.0,
             },
         )
 
@@ -79,7 +81,8 @@ class JudgeRenderTests(unittest.TestCase):
             '    "exposure_ev": -0.9,\n'
             '    "sigmoid_contrast": -2.0,\n'
             '    "sigmoid_skew": 0.9,\n'
-            '    "warmth_shift": -0.5\n'
+            '    "warmth_shift": -0.5,\n'
+            '    "vibrance": -5.0\n'
             "  },\n"
             '  "reasoning": "Clipping en altas luces y dominante verde generalizada."\n'
             "}\n"
@@ -98,6 +101,7 @@ class JudgeRenderTests(unittest.TestCase):
         self.assertEqual(verdict["adjustments"]["sigmoid_contrast"], -0.5)
         self.assertEqual(verdict["adjustments"]["sigmoid_skew"], 0.3)
         self.assertEqual(verdict["adjustments"]["warmth_shift"], -0.1)
+        self.assertEqual(verdict["adjustments"]["vibrance"], -0.2)
 
     def test_missing_render_returns_safe_fallback(self):
         verdict = judge_render(Path(self.temp_dir.name) / "missing.jpg", config=TEST_CONFIG)
@@ -107,6 +111,7 @@ class JudgeRenderTests(unittest.TestCase):
             "sigmoid_contrast": 0.0,
             "sigmoid_skew": 0.0,
             "warmth_shift": 0.0,
+            "vibrance": 0.0,
         })
         self.assertTrue(any("Juez no disponible" in issue for issue in verdict["issues"]))
 
