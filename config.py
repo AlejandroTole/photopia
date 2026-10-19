@@ -19,6 +19,7 @@ DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent / "config.yaml"
 DEFAULT_CONFIG = {
     "models": {
         "planner": "qwen2.5vl:7b",
+        "judge": "qwen2.5vl:7b",
         "analyst": "qwen2.5:7b",
         "ollama_url": "http://127.0.0.1:11434",
     },

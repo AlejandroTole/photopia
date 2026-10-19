@@ -6,7 +6,7 @@ import math
 import shutil
 import sys
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 
 import rawpy
 from analyze.image_analyzer import analyze_image
@@ -15,6 +15,7 @@ from apply.writers.sigmoid import apply_sigmoid
 from apply.writers.whitebalance import apply_temperature
 from apply.xmp import atomic_write, create_backup, read_xmp, restore_backup
 from config import load_config
+from plan.judge import judge_render
 from plan.planner import plan_edit
 from plan.safety import sanitize_plan
 from render.darktable_cli import DarktableCli
@@ -91,6 +92,63 @@ def bootstrap_xmp(
         raise RuntimeError(f"No se pudo generar el XMP inicial: {error}") from error
 
 
+def apply_writer_plan(
+    staged_xmp: Path,
+    plan: Dict[str, Any],
+    limits: Dict[str, Any],
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Aplica exposure, whitebalance y sigmoid sobre el XMP de trabajo con
+    backup+rollback atómico. Lanza RuntimeError con rollback aplicado si
+    cualquier módulo falla. Devuelve los valores efectivamente escritos.
+    """
+    backup = create_backup(staged_xmp)
+    writers = (
+        ("exposure", apply_exposure, plan.get("exposure", {})),
+        ("whitebalance", apply_temperature, plan.get("whitebalance", {})),
+        ("sigmoid", apply_sigmoid, plan.get("sigmoid", {})),
+    )
+    applied: Dict[str, Dict[str, Any]] = {}
+
+    for module_name, writer, updates in writers:
+        try:
+            success, message, values = writer(
+                staged_xmp,
+                updates,
+                simulate=False,
+                limits=limits,
+            )
+        except Exception as error:
+            try:
+                restore_backup(backup, staged_xmp)
+            except Exception as rollback_error:
+                raise RuntimeError(
+                    f"Falló el módulo {module_name} y no se pudo restaurar "
+                    f"el XMP de trabajo: {rollback_error}"
+                ) from error
+            raise RuntimeError(
+                f"Falló el módulo {module_name}; se restauró el XMP de trabajo. "
+                f"Detalle: {error}"
+            ) from error
+
+        if not success:
+            try:
+                restore_backup(backup, staged_xmp)
+            except Exception as rollback_error:
+                raise RuntimeError(
+                    f"Falló el módulo {module_name} ({message}) y no se pudo "
+                    f"restaurar el XMP de trabajo: {rollback_error}"
+                )
+            raise RuntimeError(
+                f"Falló el módulo {module_name}; se restauró el XMP de trabajo. "
+                f"Detalle: {message}"
+            )
+
+        applied[module_name] = values
+
+    return applied
+
+
 def process_photo(
     image_path: Path,
     config: Dict[str, Any],
@@ -164,51 +222,10 @@ def process_photo(
             encoding="utf-8",
         )
 
-        backup = create_backup(staged_xmp)
         limits = config.get("limits", {})
-        writers = (
-            ("exposure", apply_exposure, plan.get("exposure", {})),
-            ("whitebalance", apply_temperature, plan.get("whitebalance", {})),
-            ("sigmoid", apply_sigmoid, plan.get("sigmoid", {})),
-        )
-        applied: Dict[str, Dict[str, Any]] = {}
 
         print("  [4/5] Aplicando exposure, balance de blancos y sigmoid...")
-        for module_name, writer, updates in writers:
-            try:
-                success, message, values = writer(
-                    staged_xmp,
-                    updates,
-                    simulate=False,
-                    limits=limits,
-                )
-            except Exception as error:
-                try:
-                    restore_backup(backup, staged_xmp)
-                except Exception as rollback_error:
-                    raise RuntimeError(
-                        f"Falló el módulo {module_name} y no se pudo restaurar "
-                        f"el XMP de trabajo: {rollback_error}"
-                    ) from error
-                raise RuntimeError(
-                    f"Falló el módulo {module_name}; se restauró el XMP de trabajo. "
-                    f"Detalle: {error}"
-                ) from error
-
-            if not success:
-                try:
-                    restore_backup(backup, staged_xmp)
-                except Exception as rollback_error:
-                    raise RuntimeError(
-                        f"Falló el módulo {module_name} ({message}) y no se pudo "
-                        f"restaurar el XMP de trabajo: {rollback_error}"
-                    )
-                raise RuntimeError(
-                    f"Falló el módulo {module_name}; se restauró el XMP de trabajo. "
-                    f"Detalle: {message}"
-                )
-
-            applied[module_name] = values
+        applied = apply_writer_plan(staged_xmp, plan, limits)
 
         print(f"  [5/5] Renderizando {output_path}...")
         darktable.render(
@@ -238,6 +255,84 @@ def process_photo(
             print("  Notas de seguridad:")
             for note in safety_notes:
                 print(f"    - {note}")
+
+        # Loop render -> juez -> re-render: evalúa el render con el modelo de
+        # visión y, si lo rechaza, aplica los ajustes propuestos (ya pasados
+        # por sanitize_plan) y vuelve a renderizar, hasta max_iterations veces.
+        max_iterations = max(1, int(limits.get("max_iterations", 3)))
+        history: List[Dict[str, Any]] = []
+        accepted = False
+
+        for iteration in range(max_iterations):
+            print(f"  [Juez] Evaluando render (iteración {iteration + 1}/{max_iterations})...")
+            verdict = judge_render(output_path, camera_jpg=None, config=config)
+            history.append(
+                {
+                    "iteration": iteration,
+                    "score": verdict["score"],
+                    "render_bytes": output_path.read_bytes(),
+                }
+            )
+            print(f"    Score: {verdict['score']}/100, accept={verdict['accept']}")
+            for issue in verdict.get("issues", []):
+                print(f"    - {issue}")
+
+            if verdict["accept"]:
+                accepted = True
+                break
+
+            if iteration == max_iterations - 1:
+                break
+
+            adjustments = verdict.get("adjustments", {})
+            retry_plan_raw = {
+                "exposure": {
+                    "ev": applied["exposure"]["exposure"] + adjustments.get("exposure_ev", 0.0),
+                    "black": applied["exposure"]["black"],
+                },
+                "sigmoid": {
+                    "contrast": applied["sigmoid"]["contrast"] + adjustments.get("sigmoid_contrast", 0.0),
+                    "skew": applied["sigmoid"]["skew"] + adjustments.get("sigmoid_skew", 0.0),
+                },
+                "whitebalance": {
+                    "warmth_shift": adjustments.get("warmth_shift", 0.0),
+                },
+            }
+            retry_plan, retry_notes = sanitize_plan(retry_plan_raw, analysis, limits)
+            safety_notes.extend(note for note in retry_notes if note not in safety_notes)
+
+            print(
+                "  [Juez] Re-render con ajustes propuestos: "
+                f"EV {adjustments.get('exposure_ev', 0.0):+.3f}, "
+                f"contraste {adjustments.get('sigmoid_contrast', 0.0):+.3f}, "
+                f"skew {adjustments.get('sigmoid_skew', 0.0):+.3f}, "
+                f"warmth {adjustments.get('warmth_shift', 0.0):+.3f}"
+            )
+            applied = apply_writer_plan(staged_xmp, retry_plan, limits)
+            darktable.render(
+                input_image=image_file,
+                output_image=output_path,
+                xmp_path=staged_xmp,
+                width=None,
+                hq=True,
+                quality=97,
+            )
+
+        best = max(history, key=lambda item: item["score"])
+        if best["iteration"] != history[-1]["iteration"]:
+            output_path.write_bytes(best["render_bytes"])
+
+        if accepted:
+            print(
+                f"  [Juez] Render aceptado en la iteración {history[-1]['iteration'] + 1} "
+                f"(score {history[-1]['score']}/100)."
+            )
+        else:
+            print(
+                "  [Juez] NOTA: ninguna iteración fue aceptada por el juez; se entrega la "
+                f"de mayor score (iteración {best['iteration'] + 1}, score {best['score']}/100)."
+            )
+
         print(f"  Imagen generada: {output_path}")
         print(f"  Análisis: {analysis_path}")
         print(f"  Plan: {plan_path}")
